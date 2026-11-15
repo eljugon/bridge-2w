@@ -54,7 +54,7 @@ app solo usa:
 | Recurso | Nombre |
 | --- | --- |
 | `localStorage` | una clave por ejercicio: `BRG-S{semana}-D{día}:{ejercicio}`, p. ej. `BRG-S1-D3:A1` |
-| Cache Storage | `bridge2w-v1` |
+| Cache Storage | `bridge2w-v2` |
 | Service worker | `sw.js`, alcance `/bridge-2w/` |
 
 Al activarse, el service worker solo borra cachés cuyo nombre empieza por `bridge2w-`.
@@ -65,9 +65,11 @@ Sin backend ni dependencias externas en tiempo de ejecución (tampoco fuentes).
 | Archivo | |
 | --- | --- |
 | `build_bridge_2w.py` | generador: datos del programa, validaciones, escribe los outputs |
-| `bridge_hipertrofia_2w_v1.html` | output versionado |
+| `bridge_hipertrofia_2w_v2.html` | output versionado (los `_v` anteriores se conservan) |
 | `index.html` | copia idéntica del último output (URL estable) |
 | `sw.js` | service worker, generado por el build |
+| `icon.svg` | icono (toro cruzando un puente), generado por el build |
+| `apple-touch-icon.png` | icono de la pantalla de inicio: `icon.svg` rasterizado a 180×180 |
 | `validate.mjs` | pruebas con jsdom que ejecuta el build |
 | `package.json` | jsdom como única devDependency |
 
@@ -84,6 +86,11 @@ con fecha y día, `node --check` del JS, navegación y registro en jsdom (modo n
 sandbox), exports BTWB/CSV en las 12 sesiones, `sw.js` simulado y ausencia de URLs
 externas.
 
-No edites a mano `index.html`, `bridge_hipertrofia_2w_v1.html` ni `sw.js`: cambia el
+No edites a mano `index.html`, `bridge_hipertrofia_2w_v{N}.html`, `sw.js` ni `icon.svg`: cambia el
 generador y vuelve a ejecutarlo. Si cambia el output publicado, sube `VERSION` en el
 generador (nuevo `_v{N}.html` y nueva caché `bridge2w-v{N}`).
+
+El dibujo del icono está en `ICON_SVG` dentro del generador. Si lo cambias, vuelve a
+rasterizar `icon.svg` a `apple-touch-icon.png` (180×180, fondo opaco); el build solo
+comprueba su tamaño. iOS fija el icono al añadir la app a la pantalla de inicio: para
+ver uno nuevo hay que borrarla y volver a añadirla (exporta antes el registro).
