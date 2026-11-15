@@ -7,6 +7,7 @@ import { JSDOM, VirtualConsole } from "jsdom";
 const [htmlPath = "index.html", swPath = "sw.js"] = process.argv.slice(2);
 const html = fs.readFileSync(htmlPath, "utf8");
 const swSrc = fs.readFileSync(swPath, "utf8");
+const CACHE = swSrc.match(/const CACHE = "(bridge2w-v\d+)";/)[1];
 const ORIGIN = "https://eljugon.github.io";
 const BASE = ORIGIN + "/bridge-2w/";
 // Claves de la app principal (mismo origen): deben quedar intactas.
@@ -268,8 +269,8 @@ console.log("sw.js · ejecución simulada");
     await Promise.all(waits); return resp; };
   await fire("install");
   await fire("activate");
-  ok("activate borra solo cachés bridge2w-* antiguas", deleted.sort().join() === "bridge2w-old,bridge2w-v0" && store.has("p12w-v18") && store.has("otra-app-v3") && store.has("bridge2w-v1"), deleted.join());
-  ok("install precachea ./ e index.html en bridge2w-v1", store.get("bridge2w-v1").has(BASE) && store.get("bridge2w-v1").has(BASE + "index.html"));
+  ok("activate borra solo cachés bridge2w-* antiguas", deleted.sort().join() === "bridge2w-old,bridge2w-v0" && store.has("p12w-v18") && store.has("otra-app-v3") && store.has(CACHE), deleted.join());
+  ok("install precachea ./, index.html e iconos en " + CACHE, ["", "index.html", "apple-touch-icon.png", "icon.svg"].every(f => store.get(CACHE).has(BASE + f)));
   const out = [
     await fire("fetch", { request: { method: "GET", url: ORIGIN + "/otra-app/index.html" } }),
     await fire("fetch", { request: { method: "GET", url: ORIGIN + "/" } }),
@@ -278,7 +279,7 @@ console.log("sw.js · ejecución simulada");
   ok("fetch: ignora peticiones fuera de /bridge-2w/ y las que no son GET", out.every(r => r === undefined) && fetched.length === 0);
   const hit = await fire("fetch", { request: { method: "GET", url: BASE } });
   ok("fetch dentro del alcance: responde desde la caché propia y la refresca", (await hit) === "shell" && fetched.join() === BASE);
-  ok("solo abre la caché bridge2w-v1", opened.every(n => n === "bridge2w-v1"));
+  ok("solo abre la caché " + CACHE, opened.every(n => n === CACHE));
 }
 
 console.log(`\nvalidate.mjs: ${passed} OK, ${failed} fallos`);

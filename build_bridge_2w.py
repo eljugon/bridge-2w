@@ -13,12 +13,14 @@ de `assert a in s`, service worker real (sw.js), router con navStack explícito.
 import datetime, json, os, re, subprocess, sys, tempfile
 
 CAP = 50
-VERSION = 1
+VERSION = 2
 START = datetime.date(2026, 11, 16)          # lunes de la semana 1
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = f"bridge_hipertrofia_2w_v{VERSION}.html"
 INDEX = "index.html"
 SW = "sw.js"
+ICON_SVG_FILE = "icon.svg"                  # generado por el build (favicon)
+ICON_PNG_FILE = "apple-touch-icon.png"      # icono de la pantalla de inicio: icon.svg rasterizado a 180×180
 CACHE_PREFIX = "bridge2w-"
 CACHE = f"{CACHE_PREFIX}v{VERSION}"
 # Claves y nombres de la app principal (mismo origen en GitHub Pages): no pueden aparecer.
@@ -200,7 +202,7 @@ SW_JS = r"""// Generado por build_bridge_2w.py. No editar a mano.
 // cachés cuyo nombre empieza por PREFIX.
 const PREFIX = "__PREFIX__";
 const CACHE = "__CACHE__";
-const SHELL = ["./", "./index.html"];
+const SHELL = ["./", "./index.html", "./apple-touch-icon.png", "./icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -238,6 +240,25 @@ for a, b in (("__PREFIX__", CACHE_PREFIX), ("__CACHE__", CACHE)):
     SW_JS = SW_JS.replace(a, b)
 
 # ---------------------------------------------------------------------------
+# Icono: toro cruzando un puente. 3 colores de la paleta (--bg, --ink, --accent).
+# ---------------------------------------------------------------------------
+ICON_SVG = r"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+<rect width="180" height="180" fill="#0d0f13"/>
+<g fill="none" stroke="#eef2f7" stroke-linecap="round">
+<path stroke-width="7" d="M12 116H168"/>
+<path stroke-width="6" d="M26 164Q90 76 154 164"/>
+<path stroke-width="4" d="M44 118V141M62 118V127M118 118V127M136 118V141"/>
+</g>
+<g transform="translate(0 -10)" fill="#f2a33c" stroke="#f2a33c" stroke-linejoin="round">
+<path stroke-width="2" d="M47 80C58 72 80 76 92 71C99 58 117 58 123 70L136 73L149 90L144 97L131 93L127 101L133 122H124L115 104C102 109 86 109 73 104L65 122H56L60 102L52 122H43L50 98C45 93 44 86 47 80Z"/>
+<path stroke-width="2" d="M118 100L112 122H103L108 100Z"/>
+<path fill="none" stroke-width="4" stroke-linecap="round" d="M48 81C40 84 38 94 40 103"/>
+<path fill="none" stroke-width="5" stroke-linecap="round" d="M133 72C131 63 137 56 145 57"/>
+</g>
+</svg>
+"""
+
+# ---------------------------------------------------------------------------
 # HTML
 # ---------------------------------------------------------------------------
 HTML = r"""<!DOCTYPE html>
@@ -250,6 +271,8 @@ HTML = r"""<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bridge 2W">
 <meta name="theme-color" content="#0d0f13">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Bridge Hipertrofia · 2 semanas · Nordic Wellness</title>
 <style>
 :root{
@@ -628,6 +651,7 @@ def read_bytes(name):
 write(OUT, HTML)
 write(INDEX, HTML)
 write(SW, SW_JS)
+write(ICON_SVG_FILE, ICON_SVG)
 
 # ---------------------------------------------------------------------------
 # Validación sobre los ficheros escritos. Cualquier ✗ hace fallar el build.
@@ -704,6 +728,16 @@ check(f"sw.js: caché {CACHE}; solo borra cachés {CACHE_PREFIX}*; nunca caches.
       f'const CACHE = "{CACHE}";' in sw and sw.count("caches.delete") == 1
       and "keys.filter(k => k.startsWith(PREFIX) && k !== CACHE).map(k => caches.delete(k))" in sw
       and not re.search(r"(?<![\w.])caches\.match", sw))
+
+icon_colors = sorted(set(c.lower() for c in re.findall(r"#[0-9a-fA-F]{6}\b", ICON_SVG)))
+check("icon.svg: 3 colores como máximo, todos de la paleta",
+      len(icon_colors) <= 3 and all(f":{c};" in h.replace(" ", "") for c in icon_colors), ",".join(icon_colors))
+png = read_bytes(ICON_PNG_FILE) if os.path.exists(os.path.join(ROOT, ICON_PNG_FILE)) else b""
+check(f"{ICON_PNG_FILE}: PNG de 180×180",
+      png[:8] == b"\x89PNG\r\n\x1a\n" and png[12:16] == b"IHDR" and png[16:24] == (180).to_bytes(4, "big") * 2)
+check("iconos enlazados con ruta relativa y precacheados por sw.js",
+      '<link rel="apple-touch-icon" href="apple-touch-icon.png">' in h and '<link rel="icon" type="image/svg+xml" href="icon.svg">' in h
+      and '"./apple-touch-icon.png", "./icon.svg"' in sw)
 
 if not os.path.isdir(os.path.join(ROOT, "node_modules", "jsdom")):
     check("jsdom instalado (ejecuta `npm install`)", False, "falta node_modules/jsdom")
