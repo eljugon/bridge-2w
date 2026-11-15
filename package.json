@@ -1,0 +1,12 @@
+{
+  "name": "bridge-2w",
+  "private": true,
+  "description": "Bridge Hipertrofia 2W: generador y validación del PWA",
+  "scripts": {
+    "build": "python3 build_bridge_2w.py",
+    "validate": "node validate.mjs index.html sw.js"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.1"
+  }
+}
