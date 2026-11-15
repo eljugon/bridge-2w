@@ -2,8 +2,8 @@
 // Alcance ./ (solo este repo). Comparte origen con otras apps: solo usa y borra
 // cachés cuyo nombre empieza por PREFIX.
 const PREFIX = "bridge2w-";
-const CACHE = "bridge2w-v1";
-const SHELL = ["./", "./index.html"];
+const CACHE = "bridge2w-v2";
+const SHELL = ["./", "./index.html", "./apple-touch-icon.png", "./icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
